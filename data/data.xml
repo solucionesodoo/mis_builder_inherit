@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+	<data noupdate="1">
+
+
+		<record id="mis_report_balance" model='mis.report'>
+			<field name="name">Plantilla 1</field>
+			<field name="type_report">first</field>
+			<field name="default_code">first</field>
+		</record>
+
+
+		<record id="data_saldo_inicial" model='mis.report.subkpi'>
+			<field name="name">saldo_inicial</field>
+			<field name="sequence">1</field>
+			<field name="description">Saldo Inicial</field>
+			<field name="report_id" ref="mis_builder_inherit.mis_report_balance"></field>
+		</record>
+
+
+		<record id="data_debito" model='mis.report.subkpi'>
+			<field name="name">debito</field>
+			<field name="sequence">2</field>
+			<field name="description">Debito</field>
+			<field name="report_id" ref="mis_builder_inherit.mis_report_balance"></field>
+		</record>
+
+
+		<record id="data_credito" model='mis.report.subkpi'>
+			<field name="name">credito</field>
+			<field name="sequence">3</field>
+			<field name="description">Credito</field>
+			<field name="report_id" ref="mis_builder_inherit.mis_report_balance"></field>
+		</record>
+
+
+		<record id="data_saldo_final" model='mis.report.subkpi'>
+			<field name="name">saldo_final</field>
+			<field name="sequence">4</field>
+			<field name="description">Saldo Final</field>
+			<field name="report_id" ref="mis_builder_inherit.mis_report_balance"></field>
+		</record>
+
+
+		<record id="mis_report_balance" model='mis.report'>
+			<field name="subkpi_ids" eval="[(6, 0, [ref('data_saldo_inicial'),ref('data_debito'),ref('data_credito'), ref('data_saldo_final')])]"/>
+		</record>
+
+	</data>
+
+
+	<data noupdate="1">
+
+		<record id="mis_report_balance_2" model='mis.report'>
+			<field name="name">Plantilla 2</field>
+			<field name="type_report">second</field>
+			<field name="default_code">second</field>	
+		</record>
+
+		<record id="data_saldo_final_2" model='mis.report.subkpi'>
+			<field name="name">saldo_final</field>
+			<field name="sequence">1</field>
+			<field name="description">Saldo Final</field>
+			<field name="report_id" ref="mis_builder_inherit.mis_report_balance_2"></field>
+		</record>
+
+		<record id="mis_report_balance_2" model='mis.report'>
+			<field name="subkpi_ids" eval="[(6, 0, [ref('data_saldo_final_2')])]"/>
+		</record>
+
+	</data>
+
+
+</odoo>

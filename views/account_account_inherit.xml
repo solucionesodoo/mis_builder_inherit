@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+	<record id="account_view_account_form_view_form_inherit" model="ir.ui.view">
+		<field name="inherit_id" ref="account.view_account_form" />
+		<field name="name">account.view_account_form.view.form.inherit</field>
+		<field name="model">account.account</field>
+		<field name="arch" type="xml">
+
+			<xpath expr="/form/*" position="before">
+				<header>
+					<button name="update_report_mis" string="Actualizar Reporte MIS" type="object" class="btn-primary"/>
+				</header>
+			</xpath>
+
+
+		</field>
+	</record>
+
+</odoo>
