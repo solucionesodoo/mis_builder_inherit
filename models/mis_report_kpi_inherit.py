@@ -34,6 +34,7 @@ class MisReportKpiInherit(models.Model):
 
 	_inherit = "mis.report.kpi"
 
+	name = fields.Char(size=255, required=True, string="Name")
 
 	@api.onchange("multi")
 	def _onchange_multi(self):

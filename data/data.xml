@@ -42,7 +42,9 @@
 		</record>
 
 
+
 		<record id="mis_report_balance" model='mis.report'>
+			<field name="subkpi_ids" eval="[(6, 0, [ref('data_saldo_inicial'),ref('data_debito'),ref('data_credito'), ref('data_saldo_final')])]"/>
 			<field name="subkpi_ids" eval="[(6, 0, [ref('data_saldo_inicial'),ref('data_debito'),ref('data_credito'), ref('data_saldo_final')])]"/>
 		</record>
 

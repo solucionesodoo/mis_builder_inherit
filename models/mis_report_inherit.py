@@ -43,6 +43,7 @@ class MisReportInherit(models.Model):
 	type_report = fields.Selection(TYPE_REPORT, string="Tipo Reporte")
 	default_code = fields.Char(string="Code")
 
+
 	def return_account_account(self):
 		"""
 			Funcion que permite retornar todo el plan contable
@@ -50,43 +51,97 @@ class MisReportInherit(models.Model):
 
 		account_ids = self.env['account.account'].search([])
 
-
-		data_account = []
-		aux = []
-
-
-
-		#for x in account_ids:
-			#print(x.code + ' ' + x.name)
-
 		return account_ids
 
 	def normalize_word(self, value):
+		"""
+			Funcion que permite normalizar los caracteres especiales
+		"""
 		result = ''.join((c for c in unicodedata.normalize('NFD',value) if unicodedata.category(c) != 'Mn'))
+		
 		return result
 		
-	def return_subkpi_ids(self):
 
+
+	def return_vals_sub_kpis(self, value, report_id):
+		vals={
+
+			'sequence': 1,
+			'report_id': report_id, 
+			'name': str(value).lower().replace(' ', '_') if ' ' in value else str(value).lower(), 
+			'description': value, 
+		}
+
+		return vals
+
+
+
+
+
+	@api.model
+	def load_template_mis_report(self):
+
+		model_mis_report = self.env['mis.report']
+		model_mis_report_subkpi = self.env['mis.report.subkpi']
+		model_mis_report_kpi = self.env['mis.report.kpi']
+		model_mis_report_kpi_expression = self.env['mis.report.kpi.expression']
+
+
+		#creando reporte
+		create_mis_report_template_one = model_mis_report.sudo().create({'name':'Plantilla 1'})
+		create_mis_report_template_two = model_mis_report.sudo().create({'name':'Plantilla 2'})
+
+
+		#creando sub kpis
+		create_sub_kpi_saldo_incial = model_mis_report_subkpi.sudo().create(self.return_vals_sub_kpis('Saldo Inicial', create_mis_report_template_one.id))
+		create_sub_kpi_debito = model_mis_report_subkpi.sudo().create(self.return_vals_sub_kpis('Debito', create_mis_report_template_one.id))
+		create_sub_kpi_credito = model_mis_report_subkpi.sudo().create(self.return_vals_sub_kpis('Credito', create_mis_report_template_one.id))
+		create_sub_kpi_saldo_final = model_mis_report_subkpi.sudo().create(self.return_vals_sub_kpis('Saldo Final', create_mis_report_template_one.id))
+
+		create_sub_kpi_saldo_final_ = model_mis_report_subkpi.sudo().create(self.return_vals_sub_kpis('Saldo Final', create_mis_report_template_two.id))
+
+
+		#agregando sub kpi al reporte
+		create_mis_report_template_one.sudo().write({'subkpi_ids': [(6, _, [create_sub_kpi_saldo_incial.id, create_sub_kpi_debito.id, create_sub_kpi_credito.id, create_sub_kpi_saldo_final.id])]})
+		create_mis_report_template_two.sudo().write({'subkpi_ids': [(6, _, [create_sub_kpi_saldo_final_.id])]})
+
+
+		#cargando el plan contable actual
+		account_ids = self.return_account_account()
+
+		flag = 0
+		sql = """
+		INSERT INTO mis_report_kpi (description, name, type, compare_method, accumulation_method, report_id, multi) VALUES
 		"""
-			Funcion que permite retornar los subkpis disponibles
-		"""
-		expressions = []
+		values_sql = ""
+		for x in account_ids:
+			if flag < 10:
 
-		for subkpi in self.subkpi_ids:
-			name = ''
-			if subkpi.name == 'saldo_inicial':
-				name= 'bali[1%]'
-			if subkpi.name == 'debito':
-				name= 'debp[1%]'
-			if subkpi.name == 'credito':
-				name= 'crdp[1%]'
-			if subkpi.name == 'saldo_final':
-				name= 'bale[1%]'
+				values_sql += '(' + "'" + (str(x.code)  + ' ' + str(self.normalize_word(x.name))) + "'" + ',' + "'" + (str(self.normalize_word(x.name)).replace(' ', '_') + '_' + str(x.code)) + "'" +',' + "'" + 'num' + "'" +',' + "'" + 'pct' + "'" + ',' + "'" + 'sum' + "'" + ','  + (str(create_mis_report_template_one.id)) + ',' +  'True'  '),'
 
-			expressions.append((0, 0, {"name": subkpi.expression_ids[0].name or '', "subkpi_id": subkpi.id}))
+			flag+=1
 
 
-		return expressions
+		sql = sql + values_sql[:len(values_sql)-1]
+
+		print(sql)
+
+		self.env.cr.execute( sql )
+
+		sql_kpi = """INSERT INTO mis_report_kpi_expression (name, kpi_id, subkpi_id) VALUES"""
+		value_kpi = ""
+		for x in model_mis_report_kpi.search([('report_id', '=', create_mis_report_template_one.id)]):
+			value_kpi += "('bali[1%]', " + str(x.id) + "," + str(create_sub_kpi_saldo_incial.id) + "),"
+			value_kpi += "('debp[1%]', " + str(x.id) + "," + str(create_sub_kpi_debito.id) + "),"
+			value_kpi += "('crdp[1%]', " + str(x.id) + "," + str(create_sub_kpi_credito.id) + "),"
+			value_kpi += "('bale[1%]', " + str(x.id) + "," + str(create_sub_kpi_saldo_final.id) + "),"
+
+
+
+
+		sql_kpi = sql_kpi + value_kpi[:len(value_kpi)-1]
+		self.env.cr.execute( sql_kpi )
+				
 
 
 	def return_vals(self, report_id, name, code, expression_ids):
@@ -125,7 +180,7 @@ class MisReportInherit(models.Model):
 			'accumulation_method': 'sum', 
 			'report_id': report_id, 
 			'sequence': 3, 
-			'description': str(code) + ' ' + str(self.normalize_word(name)), 
+			'description': str(code) + '_' + str(self.normalize_word(name)), 
 			'name': str(self.normalize_word(name)).replace(' ', '_') + '_' + str(code), 
 			'style_id': False, 
 			'style_expression': False, 
@@ -154,7 +209,7 @@ class MisReportInherit(models.Model):
 			'accumulation_method': 'sum', 
 			'report_id': report_id, 
 			'sequence': 3, 
-			'description': str(code) + ' ' + str(self.normalize_word(name)), 
+			'description': str(code) + '_' + str(self.normalize_word(name)), 
 			'name': str(self.normalize_word(name)).replace(' ', '_') + '_' + str(code), 
 			'style_id': False, 
 			'style_expression': False, 
@@ -178,13 +233,14 @@ class MisReportInherit(models.Model):
 		#expressions = self.return_subkpi_ids()
 		#report_id = self.subkpi_ids[0].report_id.id
 		
-
+		flag = 0
 		for x in account_ids:
-			
+			if flag < 10:
 
-			vals = self.return_vals(report_id, x.name, x.code, None)
-				
-			data.append((0, 0, vals))
+				vals = self.return_vals(report_id, x.name, x.code, None)
+					
+				data.append((0, 0, vals))
+			flag+=1
 		
 		
 
@@ -211,12 +267,14 @@ class MisReportInherit(models.Model):
 		#report_id = self.subkpi_ids[0].report_id.id
 
 
+		flag = 0
 		for x in account_ids:
+			if flag < 10:
 			
-			vals = self.return_vals_second(report_id, x.name, x.code, None)
-			
-			data.append((0, 0, vals))
-			
+				vals = self.return_vals_second(report_id, x.name, x.code, None)
+				
+				data.append((0, 0, vals))
+			flag+=1
 
 		#vals['kpi_ids'] = None
 		#vals['kpi_ids'] = data
@@ -259,71 +317,5 @@ class MisReportInherit(models.Model):
 		self.kpi_ids = None
 
 		
-
-
-	@api.model
-	def create(self, vals):
-
-
-		if 'type_report' in vals:
-			print('mira que si')
-
-			if vals['type_report'] == 'first':
-				if 'default_code' in vals:
-					if vals['default_code'] == 'first':
-						vals['kpi_ids'] = None
-						vals['kpi_ids'] = self.create_data(self.id)
-
-			if vals['type_report'] == 'second':
-				if 'default_code' in vals:
-					if vals['default_code'] == 'second':	
-						vals['kpi_ids'] = None
-						vals['kpi_ids'] = self.create_data_second(self.id)
-
-		res = super(MisReportInherit, self).create(vals)
-
-		return res
-
-	@api.multi
-	def write(self, vals):
-
-		#print(self.create_data(self.id))
-		report_ids= self.env['mis.report.kpi'].search([('report_id', '=', self.id)])
-		
-		if report_ids:
-			for x in report_ids:
-				x.unlink()
-
-		for x in self.kpi_ids:
-			for value in x.expression_ids:
-				value.multi = True
-
-		if 'type_report' in vals:
-			print('mira que si')
-
-			if vals['type_report'] == 'first':
-			
-				if self.default_code == 'first':
-
-					print('solamente editando el primero')
-					vals['kpi_ids'] = None
-					vals['kpi_ids'] = self.create_data(self.id)
-
-			if vals['type_report'] == 'second':
-				
-				if self.default_code == 'second':	
-					print('solamente editando el segundo')	
-					vals['kpi_ids'] = None
-					vals['kpi_ids'] = self.create_data_second(self.id)
-
-		res = super(MisReportInherit, self).write(vals)
-
-		return res
-
-
-
-
-
-
 
 MisReportInherit()

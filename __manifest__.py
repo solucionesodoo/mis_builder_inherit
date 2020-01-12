@@ -39,7 +39,7 @@
 
     ],
     "data": [
-        'data/data.xml',
+      #  'data/data.xml',
         'views/account_account_inherit.xml',
         "views/mis_report_inherit.xml",
 

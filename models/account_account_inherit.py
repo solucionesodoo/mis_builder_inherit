@@ -43,22 +43,24 @@ class AccountAccountInherit(models.Model):
 		model_mis_report = self.env['mis.report']
 
 		for x in model_mis_report.sudo().search([]):
+			vals = {
+				'type': 'num', 
+				'compare_method': 'pct', 
+				'accumulation_method': 'sum', 
+				'report_id': report_id, 
+				'sequence': 3, 
+				'description': str(code) + '_' + str(self.normalize_word(name)), 
+				'name': str(self.normalize_word(name)).replace(' ', '_') + '_' + str(code), 
+				'style_id': False, 
+				'style_expression': False, 
+				'multi': True, 
+				'expression_ids': [[0, 0, {'name': 'bali[1%]', 'kpi_id': x.id, 'subkpi_id': saldo_inicial}], [0, 0, {'name': 'debp[1%]', 'kpi_id': x.id, 'subkpi_id': debito}], [0, 0, {'name': 'crdp[1%]', 'kpi_id': x.id, 'subkpi_id': credito}], [0, 0, {'name': 'bale[1%]', 'kpi_id': x.id, 'subkpi_id': saldo_final}]], 
+		
+				
+					}
+			pass
 
-			report_ids = self.env['mis.report.kpi'].search([('report_id', '=', x.id)])
-			
-			if report_ids:
-				for value in report_ids:
-					
-					value.unlink()
-
-		for x in model_mis_report.sudo().search([]):
-			if x.default_code:
-				if x.type_report == 'first':
-					print('listo')
-					x.kpi_ids = model_mis_report.create_data(x.id)
-				if x.type_report == 'second':
-					print('listooooo')
-					x.kpi_ids = model_mis_report.create_data_second(x.id)
+				#x.write({'kpi_ids': [(0,0, vals)]})
 
 
 

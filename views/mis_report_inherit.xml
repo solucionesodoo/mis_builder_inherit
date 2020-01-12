@@ -1,6 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
+
+	<data>
+		<function model="mis.report" name="load_template_mis_report"/>
+	</data>
+
+
+
 	<!-- Extending Mis Builder Form View -->
 	<record id="mis_report_view_form" model="ir.ui.view">
 		<field name="inherit_id" ref="mis_builder.mis_report_view_form" />
@@ -10,7 +17,6 @@
 
 			<xpath expr="//field[@name='move_lines_source']" position="after">
 				<field name="type_report" widget="radio" invisible="1"/>
-				<field name="default_code" invisible="1"/>
 			</xpath>
 
 		</field>
